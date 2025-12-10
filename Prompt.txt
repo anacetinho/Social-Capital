@@ -1,0 +1,26 @@
+I want to create a personal CRM / Social Capital tracker.
+the idea is for it to be the knowledge base of the user regardin all his connections.
+
+it is to run on docker.
+
+I want it to have people entries:
+- The people profile features: Overview with Basic data, Professional, Relationships, Events, Favours, Assets. 
+- Basic People data is: ID (auto generated unique key), Name, Surname, date of birth, Nationality, Address, Contact (phone), Contact (mail).
+- Professional data is a list vew where manual entries can be done of the current jobs or professional associations that person was or involved in, key data is: Company, Title, Start date, End date, currently working (checkbox), and estimated wage.
+- Relationships - person 1 , person 2, relationship type (family, extended family, friend, acquaintance, colleague, other), known since, relationship strength, last contact date (can be added manually or be derived from the most recent event person 1 and person 2 were part of), Notes.
+- Events (Title, Type, Date, description, Location, impact (1-5 , 1 is negative, 5 is positive), Participants (a list where i can tick from all the people created in my network the ones that where there. the list has a searchbar).
+- Favours (Description, From (Giver), to (Receiver), Category (Finantial, Personal, Business, Personal), Date, Estimated value, Time commitment.
+- Assets: Title, Category (Proprety, Vehicle, Business, Other), Subcategory (free text), Location, Description, Avaliable, Estimated Value.
+
+there should be a table for all these and the relations between them.
+
+the data should be possible to import and export. i should also be able to export the schema for easy import.
+
+
+## System Architecture & Configuration
+- **Container**: Docker on localhost:7000 (HTTPS: 7443)
+- **Database**: PostgreSQL with comprehensive schema and migrations
+- **Frontend**: it should be react but i want a minimalistic UI but with some clean with some animations and transitions moving from tab to tab. ideally do some deep reserch into the html and structure of 2025 award winning websites.
+- **Backend**: Node.js/Express with JWT authentication + bcrypt
+- **Visualization**:implementation architecture:
+  - D3.js  force-directed graphs

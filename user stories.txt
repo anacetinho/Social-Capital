@@ -1,0 +1,198 @@
+# User Stories - Social Capital CRM
+
+## Authentication & Account Management
+
+### US001 - User Registration
+**As a** new user  
+**I want to** create an account with email and password  
+**So that** I can access my personal relationship management system  
+
+**Acceptance Criteria:**
+- User can register with email and password
+- System validates email format and password strength
+- User receives confirmation of successful registration
+- System redirects to dashboard after registration
+
+### US002 - User Login
+**As a** registered user  
+**I want to** log in with my credentials  
+**So that** I can access my personal network data  
+
+**Acceptance Criteria:**
+- User can login with email and password
+- System validates credentials and creates session
+- User is redirected directly to dashboard after login
+- System shows appropriate error messages for invalid credentials
+
+### US003 - Demo Account Access
+**As a** potential user  
+**I want to** explore the system using a demo account  
+**So that** I can understand the features before committing to create my own account  
+
+**Acceptance Criteria:**
+- Demo account available with email: socialcapital@example.com, password: 123456
+- Demo account contains realistic sample data (160+ people, relationships, events)
+- Demo account showcases all key features
+- Demo data can be regenerated with `npm run demo-data`
+- Demo account accessible through Docker container at localhost:7000
+
+## Dashboard & Overview
+
+### US004 - Dashboard Overview
+**As a** logged-in user  
+**I want to** see a comprehensive overview of my network  
+**So that** I can quickly understand my relationship status and upcoming actions  
+
+**Acceptance Criteria:**
+- Dashboard shows network statistics and visualizations
+- Recent events and favors displayed in timeline format
+- Quick actions available: Add Person, Log Event, View Network
+
+### US005 - Network Statistics
+**As a** user  
+**I want to** see key metrics about my network  
+**So that** I can understand my relationship portfolio  
+
+**Acceptance Criteria:**
+- Total number of people in network
+- Relationship strength distribution
+- Recent activity summary
+- Network growth trends
+- Relationship health indicators
+
+## People Management
+
+### US006 - Add New Person
+**As a** user  
+**I want to** add people to my network  
+**So that** I can track and manage my relationships  
+
+**Acceptance Criteria:**
+- User can create new person with name, contact info, and profile details
+- System supports profile picture upload with automatic resizing
+- System generates unique ID for each person
+- Modal-based creation interface with form validation
+
+### US007 - View Person Profile
+**As a** user  
+**I want to** view detailed information about a person  
+**So that** I can understand our relationship and interaction history  
+
+**Acceptance Criteria:**
+- Comprehensive profile page with tabbed interface (Overview, Events, Favors Relationships)
+- Profile picture display with upload/edit functionality
+- Biographical data, contact information,
+- Timeline of shared events and interactions
+- Visual relationship mapping showing their connections
+
+### US008 - Edit Person Information
+**As a** user  
+**I want to** update person details  
+**So that** I can keep information current and accurate  
+
+**Acceptance Criteria:**
+- User can edit all person fields including profile picture
+- Changes are saved immediately with confirmation
+- System validates required fields and data formats
+- Edit functionality available from person profile page
+
+### US009 - Delete Person
+**As a** user  
+**I want to** remove people from my network  
+**So that** I can maintain a clean and relevant contact list  
+
+**Acceptance Criteria:**
+- User can delete person with confirmation dialog
+- System removes all associated relationships, events, and favors
+- Deletion is permanent and cannot be undone
+- System shows appropriate warnings before deletion
+
+## Relationship Management
+
+### US010 - Create Relationships
+**As a** user  
+**I want to** define connections between people in my network  
+**So that** I can map true multi-degree relationships  
+
+**Acceptance Criteria:**
+- User can create bidirectional relationships between any two people
+- System provides kinship type selection (family, friend, colleague, etc.)
+- User can set relationship strength (1-5) and add notes
+- System prevents duplicate relationships
+- Smart relationship builder suggests connections from existing network
+
+### US011 - View Network Visualization
+**As a** user  
+**I want to** see an interactive network graph  
+**So that** I can visualize my connections and discover relationship patterns  
+
+**Acceptance Criteria:**
+- Interactive D3.js network graph with force simulation
+- Colored links representing relationship types
+- Filtering by relationship type
+- Zoom, pan, and hover interactions
+- Profile pictures as node avatars for recognition
+
+### US012 - Connection Pathfinding
+**As a** user  
+**I want to** find connection paths between people  
+**So that** I can understand how to reach someone through mutual contacts  
+
+**Acceptance Criteria:**
+- System calculates shortest path between any two people
+- BFS algorithm finds optimal connection routes
+- Visual highlighting of connection paths on network graph
+- Path strength calculation based on relationship scores
+- Multi-degree connection analysis (up to 3 degrees)
+
+## Event Management
+
+### US013 - Log Events
+**As a** user  
+**I want to** record interactions and events  
+**So that** I can track my relationship history and activity  
+
+**Acceptance Criteria:**
+- User can create events with title, description, date, and location
+- System supports multiple participants from network
+- User can rate interaction quality (1-5) and intimacy level
+- Event types include meeting, call, message, favor, conflict, celebration
+- Events contribute to relationship scoring algorithm
+
+### US014 - View Event History
+**As a** user  
+**I want to** see all events for a person or time period  
+**So that** I can review interaction history and patterns  
+
+**Acceptance Criteria:**
+- Events page shows all events with filtering options
+- Event cards display key information and participants
+- User can view, edit, and delete events
+- Events are organized chronologically with search functionality
+- Person profile shows their specific event history
+
+## Favor Tracking
+
+### US015 - Record Favors
+**As a** user  
+**I want to** track favors given and received  
+**So that** I can monitor reciprocity and relationship balance  
+
+**Acceptance Criteria:**
+- User can record favors with giver, receiver, and description
+- System tracks favor category, value estimate, and impact score
+- Favor types include professional, personal, financial, social
+- System shows reciprocity balance for each relationship
+- Favors contribute to dynamic relationship scoring
+
+### US016 - View Favor History
+**As a** user  
+**I want to** see favor exchange history  
+**So that** I can understand relationship dynamics and balance  
+
+**Acceptance Criteria:**
+- Favors page shows all favors with filtering options
+- Favor cards display key information and reciprocity status
+- User can view, edit, and delete favors
+- System shows favor balance and exchange patterns
+- Person profile shows their specific favor history

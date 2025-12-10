@@ -1,0 +1,304 @@
+const LLMProviderService = require('./LLMProviderService');
+const Message = require('../models/Message');
+const Chat = require('../models/Chat');
+const { getAllFunctionDefinitions, executeFunction } = require('./assistant-functions');
+
+/**
+ * AssistantService - Orchestrates AI assistant responses with function calling
+ */
+class AssistantService {
+  constructor(userId, userSettings, context = null) {
+    this.userId = userId;
+    this.baseURL = userSettings.local_llm_base_url;
+    this.model = userSettings.local_llm_model;
+    this.maxResults = userSettings.ai_max_results || 100;
+    this.context = context;
+
+    // Initialize LLM provider
+    this.llmProvider = new LLMProviderService(this.baseURL, this.model);
+
+    // Get available functions
+    this.availableFunctions = getAllFunctionDefinitions();
+  }
+
+  /**
+   * Generate system prompt for the AI assistant
+   */
+  getSystemPrompt() {
+    const today = new Date().toISOString().split('T')[0];
+
+    let contextSection = '';
+    if (this.context && typeof this.context === 'object') {
+      contextSection = `\n## Current Context
+You are currently viewing the profile of **${this.context.personName || 'a person'}**${this.context.personGender ? ` (Gender: ${this.context.personGender})` : ''}.
+${this.context.personAddress ? `Their address is: ${this.context.personAddress}` : ''}
+
+**IMPORTANT**: When the user refers to "A", "the person", "them", "their city", or "the city", they are referring to ${this.context.personName || 'this person'} and their location. DO NOT ask "Who is A?" or "Which city?" - use the context provided above.
+`;
+    }
+
+    return `## Your Identity
+You are an AI assistant for a Social Capital CRM application. You help users understand and analyze their professional and personal network.
+${contextSection}
+
+## Your Purpose
+You help users:
+- Understand their social network structure and connections
+- Find information about specific people in their network
+- Analyze relationship strength and quality
+- Track interactions, events, and favors
+- Discover connection paths between people
+- Identify network insights and patterns
+
+## Your Capabilities
+You have access to comprehensive data about the user's network through specialized functions:
+- **get_people**: Retrieve detailed info about contacts (relationships, assets, professional history, biography, events)
+- **get_network**: Analyze network structure, find paths between people, get statistics
+- **get_events**: Retrieve interaction history (meetings, calls, emails, social events)
+- **get_favors**: Track favors given and received, analyze reciprocity
+- **get_relationships**: Get relationship details with scoring and interaction history
+
+## Data You Can Access
+For each person, you can retrieve:
+- Basic information (name, email, phone, birthday, location)
+- All relationships (type, strength, with whom)
+- Assets they own (property, vehicles, skills, equipment)
+- Professional history (companies, positions, dates)
+- Biography notes and timeline
+- Recent events and interactions
+- Network position (N1/N2/N3 connections)
+
+For relationships, you can analyze:
+- Computed relationship scores (multi-factor algorithm)
+- Interaction frequency and recency
+- Favor balance and reciprocity
+- Shared events and history
+
+## HOW TO USE YOUR TOOLS - CRITICAL INSTRUCTIONS
+**YOU MUST ALWAYS USE THE AVAILABLE FUNCTIONS TO ANSWER QUESTIONS. DO NOT RESPOND WITH GENERIC TEXT OR SUGGESTIONS.**
+
+**When the user asks about people or their assets/properties:**
+→ IMMEDIATELY call \`get_people\` with \`include_assets: true\` and \`include_relationships: true\`
+→ Analyze the ACTUAL data returned
+→ Provide a direct answer based on REAL results
+
+**When the user asks about network connections or paths:**
+→ IMMEDIATELY call \`get_network\` with appropriate parameters
+→ Use the ACTUAL network data to answer
+
+**When the user asks about events or interactions:**
+→ IMMEDIATELY call \`get_events\` with relevant filters
+→ Report REAL event data
+
+**NEVER say:**
+- "I don't see any specific tools available"
+- "You could use get_people"
+- "Here are some alternative approaches"
+- "Let me know if you need help"
+
+**ALWAYS:**
+- Call the appropriate function(s) FIRST
+- Use the actual data from function results
+- Provide concrete answers with real names and details
+
+## Your Rules
+1. **Be comprehensive**: When answering questions, use multiple functions to gather complete context
+2. **Be specific**: Include names, dates, numbers, and concrete details
+3. **Be insightful**: Look for patterns, trends, and meaningful connections
+4. **Be conversational**: Explain findings in natural language
+5. **Use markdown**: Format responses with headers, lists, and emphasis for readability
+6. **Ask follow-up questions**: Help users explore their network more deeply
+7. **Respect privacy**: Only share information the user requests
+8. **Current date**: Today is ${today}
+
+## Response Style
+- Start with a direct answer to the user's question
+- Provide supporting data and context
+- Use bullet points and formatting for clarity
+- Suggest related insights or follow-up questions
+- Be friendly and helpful
+
+## Examples of Good Responses
+**Question**: "Who are my strongest connections?"
+
+**Good Response**:
+"Your strongest connections based on relationship strength and interaction frequency:
+
+**Top 5 Connections:**
+1. **John Doe** (Strength: 5/5) - Friend, 23 interactions, last contact: 2025-10-15
+2. **Jane Smith** (Strength: 5/5) - Colleague, 18 interactions, last contact: 2025-10-12
+...
+
+These connections show high reciprocity in favors and frequent interactions. Would you like me to analyze any specific relationship in more detail?"
+
+Remember: Always gather comprehensive context before responding. Use multiple functions when needed to provide complete, accurate answers.`;
+  }
+
+  /**
+   * Process a chat message and generate a response with function calling
+   * Returns an async generator that yields chunks for streaming
+   */
+  async *processMessage(chatId, userMessage) {
+    try {
+      // Get chat history (last 10 messages for context)
+      const history = await Message.getRecentMessages(chatId, 10);
+
+      // Build messages array for LLM
+      const messages = [
+        { role: 'system', content: this.getSystemPrompt() },
+        ...Message.formatForLLM(history),
+        { role: 'user', content: userMessage }
+      ];
+
+      // Create assistant message placeholder
+      let assistantMessageId = null;
+      let fullContent = '';
+      let toolCalls = null;
+
+      // First LLM call (may return function calls)
+      const stream = this.llmProvider.streamChatCompletion(messages, {
+        functions: this.availableFunctions,
+        temperature: 0.7,
+        maxTokens: 2000
+      });
+
+      for await (const chunk of stream) {
+        if (chunk.type === 'content') {
+          fullContent = chunk.fullContent;
+          yield { type: 'content', content: chunk.content };
+        }
+
+        if (chunk.type === 'tool_calls') {
+          toolCalls = chunk.toolCalls;
+        }
+
+        if (chunk.type === 'done') {
+          // Check if we got function calls
+          if (toolCalls && toolCalls.length > 0) {
+            yield { type: 'thinking', message: 'Retrieving data...' };
+
+            // Execute all function calls
+            const functionResults = await this.executeFunctionCalls(toolCalls);
+
+            // Add function results to messages
+            const updatedMessages = [
+              ...messages,
+              {
+                role: 'assistant',
+                content: fullContent || null,
+                tool_calls: toolCalls
+              },
+              ...functionResults.map(result => ({
+                role: 'tool',
+                tool_call_id: result.tool_call_id,
+                name: result.name,
+                content: JSON.stringify(result.result)
+              }))
+            ];
+
+            // Second LLM call with function results
+            yield { type: 'thinking', message: 'Analyzing data...' };
+
+            const secondStream = this.llmProvider.streamChatCompletion(updatedMessages, {
+              temperature: 0.7,
+              maxTokens: 2000
+            });
+
+            fullContent = '';
+            for await (const secondChunk of secondStream) {
+              if (secondChunk.type === 'content') {
+                fullContent = secondChunk.fullContent;
+                yield { type: 'content', content: secondChunk.content };
+              }
+
+              if (secondChunk.type === 'done') {
+                // Save assistant message with function call info
+                const assistantMessage = await Message.createAssistantMessage(
+                  chatId,
+                  fullContent,
+                  toolCalls
+                );
+                assistantMessageId = assistantMessage.id;
+
+                yield {
+                  type: 'done',
+                  messageId: assistantMessageId,
+                  content: fullContent
+                };
+              }
+            }
+          } else {
+            // No function calls, just save the response
+            const assistantMessage = await Message.createAssistantMessage(
+              chatId,
+              fullContent
+            );
+            assistantMessageId = assistantMessage.id;
+
+            yield {
+              type: 'done',
+              messageId: assistantMessageId,
+              content: fullContent
+            };
+          }
+
+          // Touch the chat to update timestamp
+          await Chat.touch(chatId);
+        }
+      }
+    } catch (error) {
+      console.error('AssistantService error:', error);
+      yield {
+        type: 'error',
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Execute function calls returned by the LLM
+   */
+  async executeFunctionCalls(toolCalls) {
+    const results = [];
+
+    for (const toolCall of toolCalls) {
+      try {
+        const functionName = toolCall.function.name;
+        const functionArgs = LLMProviderService.parseFunctionArguments(
+          toolCall.function.arguments
+        );
+
+        console.log(`Executing function: ${functionName}`, functionArgs);
+
+        const result = await executeFunction(functionName, this.userId, functionArgs);
+
+        results.push({
+          tool_call_id: toolCall.id,
+          name: functionName,
+          result
+        });
+      } catch (error) {
+        console.error(`Error executing function ${toolCall.function.name}:`, error);
+        results.push({
+          tool_call_id: toolCall.id,
+          name: toolCall.function.name,
+          result: {
+            success: false,
+            error: error.message
+          }
+        });
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Test LLM connection
+   */
+  async testConnection() {
+    return await this.llmProvider.testConnection();
+  }
+}
+
+module.exports = AssistantService;

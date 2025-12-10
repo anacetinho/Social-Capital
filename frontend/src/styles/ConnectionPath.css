@@ -1,0 +1,160 @@
+.connection-path {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 12px 0;
+}
+
+.connection-path-not-found {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 12px 0;
+}
+
+.connection-path-not-found p {
+  margin: 0 0 12px 0;
+  color: #856404;
+  font-weight: 500;
+}
+
+.suggested-intermediaries {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #ffc107;
+}
+
+.suggested-intermediaries p {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #856404;
+}
+
+.suggested-intermediaries ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.suggested-intermediaries li {
+  padding: 6px 0;
+  color: #856404;
+  font-weight: 500;
+}
+
+.path-summary {
+  margin-bottom: 16px;
+}
+
+.path-info {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.degrees-badge,
+.strength-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+}
+
+.degrees-badge {
+  background: #2196f3;
+}
+
+.strength-badge {
+  /* Background color set inline based on strength */
+}
+
+.path-visualization {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  overflow-x: auto;
+  padding: 16px 0;
+}
+
+.path-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 100px;
+  max-width: 120px;
+  text-align: center;
+}
+
+.path-avatar,
+.path-avatar-placeholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  margin-bottom: 8px;
+  object-fit: cover;
+}
+
+.path-avatar-placeholder {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.path-node-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+  word-wrap: break-word;
+}
+
+.path-node-snippet {
+  font-size: 11px;
+  color: #666;
+  line-height: 1.3;
+  max-height: 40px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.path-connector {
+  display: flex;
+  align-items: center;
+  margin: 0 8px;
+  flex-shrink: 0;
+}
+
+.path-intermediaries {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.intermediaries-label {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.intermediaries-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.intermediary-name {
+  background: #e3f2fd;
+  color: #1976d2;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
