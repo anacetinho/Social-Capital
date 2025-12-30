@@ -1121,7 +1121,7 @@ class SummaryGenerationService {
   static async generateSummaryWithLLM(userId, personData) {
     // Get user LLM settings
     const userResult = await pool.query(
-      `SELECT ai_api_url, ai_model
+      `SELECT ai_api_url, ai_model, ai_timeout
        FROM users
        WHERE id = $1`,
       [userId]
@@ -1132,7 +1132,9 @@ class SummaryGenerationService {
     // Create LLM provider instance
     const llmProvider = new LLMProviderService(
       userSettings.ai_api_url,
-      userSettings.ai_model
+      userSettings.ai_model,
+      'dummy-key',
+      userSettings.ai_timeout || 200
     );
 
     const prompt = this.buildSummaryPrompt(personData);
@@ -1947,7 +1949,7 @@ class SummaryGenerationService {
   static async generateSummaryAWithLLM(userId, personData) {
     // Get user LLM settings
     const userResult = await pool.query(
-      `SELECT ai_api_url, ai_model
+      `SELECT ai_api_url, ai_model, ai_timeout
        FROM users
        WHERE id = $1`,
       [userId]
@@ -1958,7 +1960,9 @@ class SummaryGenerationService {
     // Create LLM provider instance
     const llmProvider = new LLMProviderService(
       userSettings.ai_api_url,
-      userSettings.ai_model
+      userSettings.ai_model,
+      'dummy-key',
+      userSettings.ai_timeout || 200
     );
 
     const prompt = this.buildSummaryAPrompt(personData);
@@ -2178,7 +2182,7 @@ This is a DATABASE DUMP in plain text format - no analysis whatsoever.`
   static async generateSummaryBWithLLM(userId, data) {
     // Get user LLM settings
     const userResult = await pool.query(
-      `SELECT ai_api_url, ai_model
+      `SELECT ai_api_url, ai_model, ai_timeout
        FROM users
        WHERE id = $1`,
       [userId]
@@ -2189,7 +2193,9 @@ This is a DATABASE DUMP in plain text format - no analysis whatsoever.`
     // Create LLM provider instance
     const llmProvider = new LLMProviderService(
       userSettings.ai_api_url,
-      userSettings.ai_model
+      userSettings.ai_model,
+      'dummy-key',
+      userSettings.ai_timeout || 200
     );
 
     // Call LLM to generate Summary B

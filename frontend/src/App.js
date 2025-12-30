@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -12,6 +13,7 @@ import NetworkGraph from './pages/NetworkGraph';
 import Interactions from './pages/Interactions';
 import EventForm from './pages/EventForm';
 import EventDetail from './pages/EventDetail';
+import Favors from './pages/Favors';
 import FavorForm from './pages/FavorForm';
 import FavorDetail from './pages/FavorDetail';
 import Relationships from './pages/Relationships';
@@ -29,9 +31,10 @@ import './styles/App.css';
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
+    <ErrorBoundary>
+      <AuthProvider>
+        <Router>
+          <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
@@ -121,6 +124,15 @@ function App() {
             element={
               <ProtectedRoute>
                 <EventForm />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/favors"
+            element={
+              <ProtectedRoute>
+                <Favors />
               </ProtectedRoute>
             }
           />
@@ -291,6 +303,7 @@ function App() {
         </Routes>
       </Router>
     </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

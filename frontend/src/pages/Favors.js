@@ -74,7 +74,7 @@ const Favors = () => {
     const colors = {
       pending: '#f39c12',
       completed: '#2ecc71',
-      cancelled: '#95a5a6',
+      declined: '#95a5a6',
     };
     return colors[status] || '#95a5a6';
   };
@@ -216,7 +216,7 @@ const Favors = () => {
               <option value="all">All</option>
               <option value="pending">Pending</option>
               <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="declined">Declined</option>
             </select>
           </div>
 

@@ -116,15 +116,14 @@ router.get('/:id', auth, async (req, res) => {
 
 /**
  * POST /api/v1/chats
- * Create a new chat with an initial message and optional personas
+ * Create a new chat with an optional initial message and optional personas
  */
 router.post('/', auth, async (req, res) => {
   try {
     const { message, context, askingAsPersonId, talkingToPersonId } = req.body;
 
-    if (!message || !message.trim()) {
-      return res.status(400).json({ error: 'Message is required' });
-    }
+    // Message is now optional - if not provided, create an empty chat
+    const trimmedMessage = message?.trim();
 
     // Check if AI assistant is enabled and LLM is configured
     const userResult = await pool.query(
@@ -153,7 +152,10 @@ router.post('/', auth, async (req, res) => {
         [askingAsPersonId, req.userId]
       );
       if (personCheck.rows.length === 0) {
-        return res.status(400).json({ error: 'Invalid asking_as_person_id' });
+        return res.status(400).json({ 
+          error: 'Invalid asking_as_person_id',
+          details: 'The specified person does not exist or does not belong to you'
+        });
       }
     }
 
@@ -163,18 +165,26 @@ router.post('/', auth, async (req, res) => {
         [talkingToPersonId, req.userId]
       );
       if (personCheck.rows.length === 0) {
-        return res.status(400).json({ error: 'Invalid talking_to_person_id' });
+        return res.status(400).json({ 
+          error: 'Invalid talking_to_person_id',
+          details: 'The specified person does not exist or does not belong to you'
+        });
       }
     }
 
-    // Create chat with initial message, personas, and optional context
+    // Determine chat title
+    const chatTitle = trimmedMessage 
+      ? trimmedMessage.substring(0, 80) // Use first 80 chars of message as title
+      : `New Conversation - ${new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
+
+    // Create chat with personas, and optional context
     const chatResult = await pool.query(
       `INSERT INTO chats (user_id, title, context, asking_as_person_id, talking_to_person_id)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
       [
         req.userId,
-        message.substring(0, 80), // Use first 80 chars as title
+        chatTitle,
         context || null,
         askingAsPersonId || null,
         talkingToPersonId || null
@@ -183,8 +193,10 @@ router.post('/', auth, async (req, res) => {
 
     const chat = chatResult.rows[0];
 
-    // Create initial user message
-    await Message.createUserMessage(chat.id, message);
+    // Create initial user message only if message was provided
+    if (trimmedMessage) {
+      await Message.createUserMessage(chat.id, trimmedMessage);
+    }
 
     res.status(201).json({
       success: true,
@@ -193,7 +205,16 @@ router.post('/', auth, async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating chat:', error);
-    res.status(500).json({ error: 'Failed to create chat' });
+    const errorDetails = {
+      error: 'Failed to create chat'
+    };
+    
+    // Include error details in development mode
+    if (process.env.NODE_ENV === 'development') {
+      errorDetails.details = error.message;
+    }
+    
+    res.status(500).json(errorDetails);
   }
 });
 
@@ -244,7 +265,7 @@ router.get('/:id/stream', authWithQueryParam, async (req, res) => {
 
     // Get user settings
     const userResult = await pool.query(
-      `SELECT ai_assistant_enabled, ai_api_url, ai_model, api_key
+      `SELECT ai_assistant_enabled, ai_api_url, ai_model, api_key, ai_timeout
        FROM users
        WHERE id = $1`,
       [req.userId]
@@ -317,7 +338,8 @@ router.get('/:id/stream', authWithQueryParam, async (req, res) => {
     const assistant = new ChatAssistantService(
       userSettings.ai_api_url,
       userSettings.ai_model,
-      userSettings.api_key || 'dummy-key'
+      userSettings.api_key || 'dummy-key',
+      userSettings.ai_timeout || 200
     );
 
     // Format messages for LLM (remove id, created_at, etc.)

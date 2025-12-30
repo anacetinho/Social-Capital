@@ -6,16 +6,19 @@ const fs = require('fs');
  * Supports any OpenAI-compatible endpoint (LM Studio, Ollama, etc.)
  */
 class LLMProviderService {
-  constructor(baseURL, model, apiKey = 'dummy-key') {
+  constructor(baseURL, model, apiKey = 'dummy-key', timeoutSeconds = 200) {
     // Normalize localhost URLs for Docker environments
     this.baseURL = this._normalizeDockerURL(baseURL);
     this.model = model;
+
+    // Convert seconds to milliseconds
+    const timeoutMs = timeoutSeconds * 1000;
 
     // Initialize OpenAI client with custom base URL
     this.client = new OpenAI({
       baseURL: this.baseURL + '/v1',
       apiKey: apiKey, // Local LLMs typically don't need a real API key
-      timeout: 300000 // 5 minutes timeout for LLM responses
+      timeout: timeoutMs // User-configurable timeout
     });
   }
 

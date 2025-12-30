@@ -12,7 +12,7 @@ router.get('/ai', auth, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT ai_assistant_enabled, ai_provider, ai_api_url, ai_model,
-              ai_max_results, key_person_id
+              ai_max_results, ai_timeout, key_person_id
        FROM users
        WHERE id = $1`,
       [req.userId]
@@ -55,6 +55,7 @@ router.put('/ai', auth, async (req, res) => {
       ai_api_url,
       ai_model,
       ai_max_results,
+      ai_timeout,
       key_person_id
     } = req.body;
 
@@ -90,6 +91,16 @@ router.put('/ai', auth, async (req, res) => {
       if (isNaN(maxResults) || maxResults < 1 || maxResults > 1000) {
         return res.status(400).json({
           error: 'Max results must be between 1 and 1000'
+        });
+      }
+    }
+
+    // Validate timeout
+    if (ai_timeout !== undefined) {
+      const timeout = parseInt(ai_timeout);
+      if (isNaN(timeout) || timeout < 10 || timeout > 600) {
+        return res.status(400).json({
+          error: 'Timeout must be between 10 and 600 seconds'
         });
       }
     }
@@ -135,6 +146,11 @@ router.put('/ai', auth, async (req, res) => {
       values.push(parseInt(ai_max_results));
     }
 
+    if (ai_timeout !== undefined) {
+      updateFields.push(`ai_timeout = $${paramCount++}`);
+      values.push(parseInt(ai_timeout));
+    }
+
     if (key_person_id !== undefined) {
       updateFields.push(`key_person_id = $${paramCount++}`);
       values.push(key_person_id);
@@ -151,7 +167,7 @@ router.put('/ai', auth, async (req, res) => {
        SET ${updateFields.join(', ')}
        WHERE id = $${paramCount}
        RETURNING ai_assistant_enabled, ai_provider, ai_api_url, ai_model,
-                 ai_max_results, key_person_id`,
+                 ai_max_results, ai_timeout, key_person_id`,
       values
     );
 

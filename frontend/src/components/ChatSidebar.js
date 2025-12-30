@@ -15,6 +15,7 @@ const ChatSidebar = ({ isOpen, onClose, currentPerson = null }) => {
   const [streamingContent, setStreamingContent] = useState('');
   const [toolCalls, setToolCalls] = useState([]);
   const [error, setError] = useState('');
+  const [creatingChat, setCreatingChat] = useState(false);
 
   // Persona state
   const [people, setPeople] = useState([]);
@@ -322,11 +323,58 @@ const ChatSidebar = ({ isOpen, onClose, currentPerson = null }) => {
     }
   };
 
-  const startNewChat = () => {
-    setCurrentChat(null);
-    setMessages([]);
-    setStreamingContent('');
+  const startNewChat = async () => {
+    // Prevent creating multiple chats simultaneously
+    if (creatingChat || streaming) return;
+
+    setCreatingChat(true);
     setError('');
+
+    try {
+      // Validate that personas exist if selected
+      if (askingAs && !people.find(p => p.id === askingAs.id)) {
+        setError('Selected "Asking as" person is invalid. Please reselect.');
+        setCreatingChat(false);
+        return;
+      }
+
+      if (talkingTo && !people.find(p => p.id === talkingTo.id)) {
+        setError('Selected "Talking to" person is invalid. Please reselect.');
+        setCreatingChat(false);
+        return;
+      }
+
+      // Build context object if currentPerson is available
+      const context = currentPerson ? {
+        personId: currentPerson.id,
+        personName: currentPerson.name,
+        personGender: currentPerson.gender,
+        personAddress: currentPerson.address
+      } : null;
+
+      // Create new empty chat with current persona selections
+      const response = await api.post('/chats', {
+        context,
+        askingAsPersonId: askingAs?.id || null,
+        talkingToPersonId: talkingTo?.id || null
+        // No message - creates empty chat
+      });
+
+      const newChat = response.data.chat;
+
+      // Update state with new chat
+      setChats(prev => [newChat, ...prev]);
+      setCurrentChat(newChat);
+      setMessages([]);
+      setStreamingContent('');
+      setError('');
+    } catch (err) {
+      const errorMessage = err.response?.data?.error || 'Failed to create chat';
+      const errorDetails = err.response?.data?.details;
+      setError(errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage);
+    } finally {
+      setCreatingChat(false);
+    }
   };
 
   const filteredChats = chats.filter(chat =>
@@ -347,8 +395,12 @@ const ChatSidebar = ({ isOpen, onClose, currentPerson = null }) => {
           {/* Left panel - Chat history */}
           <div className="chat-list-panel">
             <div className="chat-list-header">
-              <button className="new-chat-btn" onClick={startNewChat}>
-                + New Chat
+              <button 
+                className="new-chat-btn" 
+                onClick={startNewChat}
+                disabled={creatingChat || streaming}
+              >
+                {creatingChat ? 'Creating...' : '+ New Chat'}
               </button>
               <input
                 type="text"
@@ -415,9 +467,27 @@ const ChatSidebar = ({ isOpen, onClose, currentPerson = null }) => {
                 <label>Asking as:</label>
                 <select
                   value={askingAs?.id || ''}
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const person = people.find(p => p.id === e.target.value);
                     setAskingAs(person || null);
+                    
+                    // Update current chat if one is loaded
+                    if (currentChat) {
+                      try {
+                        await api.patch(`/chats/${currentChat.id}`, {
+                          askingAsPersonId: person?.id || null
+                        });
+                        // Update currentChat object to stay in sync
+                        setCurrentChat(prev => ({
+                          ...prev,
+                          asking_as_person_id: person?.id || null,
+                          asking_as_person: person || null
+                        }));
+                      } catch (err) {
+                        console.error('Failed to update chat persona:', err);
+                        setError('Failed to update persona selection');
+                      }
+                    }
                   }}
                   className="persona-select"
                 >
@@ -439,9 +509,27 @@ const ChatSidebar = ({ isOpen, onClose, currentPerson = null }) => {
                 <label>Talking to:</label>
                 <select
                   value={talkingTo?.id || ''}
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const person = people.find(p => p.id === e.target.value);
                     setTalkingTo(person || null);
+                    
+                    // Update current chat if one is loaded
+                    if (currentChat) {
+                      try {
+                        await api.patch(`/chats/${currentChat.id}`, {
+                          talkingToPersonId: person?.id || null
+                        });
+                        // Update currentChat object to stay in sync
+                        setCurrentChat(prev => ({
+                          ...prev,
+                          talking_to_person_id: person?.id || null,
+                          talking_to_person: person || null
+                        }));
+                      } catch (err) {
+                        console.error('Failed to update chat persona:', err);
+                        setError('Failed to update persona selection');
+                      }
+                    }
                   }}
                   className="persona-select"
                 >

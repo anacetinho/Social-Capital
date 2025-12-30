@@ -35,6 +35,7 @@ router.get(
   [
     query('status').optional().isIn(['pending', 'completed', 'declined']),
     query('person_id').optional().isUUID(),
+    query('direction').optional().isIn(['given', 'received']),
     query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
     query('offset').optional().isInt({ min: 0 }).toInt(),
     validate

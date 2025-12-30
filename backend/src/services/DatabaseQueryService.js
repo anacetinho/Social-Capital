@@ -422,7 +422,7 @@ class DatabaseQueryService {
    * @returns {Array} People matching criteria, with connection paths if fromPersonId provided
    */
   static async searchPeopleByDemographics(userId, filters, fromPersonId = null) {
-    const { relationshipStatus, minAge, maxAge, gender, location } = filters;
+    const { relationshipStatus, minAge, maxAge, gender, location, familyFilter } = filters;
 
     // Build WHERE conditions
     const conditions = ['p.user_id = $1'];
@@ -495,6 +495,64 @@ class DatabaseQueryService {
         people = peopleWithStatus.filter(p => !p.hasRomanticRelationship);
       } else if (relationshipStatus === 'in_relationship') {
         people = peopleWithStatus.filter(p => p.hasRomanticRelationship);
+      }
+    }
+
+    // Apply family filter if specified and fromPersonId is provided
+    if (familyFilter && fromPersonId && people.length > 0) {
+      // Validate fromPersonId is a UUID before querying
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(fromPersonId)) {
+        const familyResult = await pool.query(
+          `SELECT CASE 
+             WHEN r.person_a_id = $1 THEN r.person_b_id 
+             ELSE r.person_a_id 
+           END as family_member_id
+           FROM relationships r
+           WHERE (r.person_a_id = $1 OR r.person_b_id = $1)
+             AND r.user_id = $2
+             AND (
+               LOWER(r.relationship_type) LIKE '%family%'
+               OR LOWER(r.relationship_type) LIKE '%sibling%'
+               OR LOWER(r.relationship_type) LIKE '%brother%'
+               OR LOWER(r.relationship_type) LIKE '%sister%'
+               OR LOWER(r.relationship_type) LIKE '%parent%'
+               OR LOWER(r.relationship_type) LIKE '%father%'
+               OR LOWER(r.relationship_type) LIKE '%mother%'
+               OR LOWER(r.relationship_type) LIKE '%child%'
+               OR LOWER(r.relationship_type) LIKE '%son%'
+               OR LOWER(r.relationship_type) LIKE '%daughter%'
+               OR LOWER(r.relationship_type) LIKE '%cousin%'
+               OR LOWER(r.relationship_type) LIKE '%uncle%'
+               OR LOWER(r.relationship_type) LIKE '%aunt%'
+               OR LOWER(r.relationship_type) LIKE '%nephew%'
+               OR LOWER(r.relationship_type) LIKE '%niece%'
+               OR LOWER(r.relationship_type) LIKE '%grandparent%'
+               OR LOWER(r.relationship_type) LIKE '%grandfather%'
+               OR LOWER(r.relationship_type) LIKE '%grandmother%'
+               OR LOWER(r.relationship_type) LIKE '%grandchild%'
+               OR LOWER(r.relationship_type) LIKE '%grandson%'
+               OR LOWER(r.relationship_type) LIKE '%granddaughter%'
+               OR LOWER(r.context) LIKE '%family%'
+               OR LOWER(r.context) LIKE '%sibling%'
+               OR LOWER(r.context) LIKE '%brother%'
+               OR LOWER(r.context) LIKE '%sister%'
+             )`,
+          [fromPersonId, userId]
+        );
+
+        const familyIds = familyResult.rows.map(row => row.family_member_id);
+
+        if (familyIds.length > 0) {
+          if (familyFilter === 'exclude') {
+            // Exclude family members (for dating/matchmaking)
+            people = people.filter(p => !familyIds.includes(p.id));
+          } else if (familyFilter === 'only') {
+            // Show only family members (for family queries)
+            people = people.filter(p => familyIds.includes(p.id));
+          }
+          // If familyFilter === 'include' or anything else, don't filter (default behavior)
+        }
       }
     }
 

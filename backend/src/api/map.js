@@ -16,9 +16,10 @@ const geocodingService = new GeocodingService();
  * - search: search query to filter by name/address
  */
 router.get('/locations', authenticate, async (req, res) => {
+  const userId = req.userId;
+  const { type = 'all', search = '' } = req.query;
+  
   try {
-    const userId = req.userId;
-    const { type = 'all', search = '' } = req.query;
 
     const locations = {
       people: [],
@@ -167,7 +168,18 @@ router.get('/locations', authenticate, async (req, res) => {
 
   } catch (error) {
     console.error('Error fetching map locations:', error);
-    res.status(500).json({ error: 'Failed to fetch map locations' });
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      userId: req.userId,
+      queryType: type,
+      searchTerm: search
+    });
+    res.status(500).json({ 
+      error: 'Failed to fetch locations',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
@@ -230,7 +242,16 @@ router.get('/failed', authenticate, async (req, res) => {
 
   } catch (error) {
     console.error('Error fetching failed geocoding:', error);
-    res.status(500).json({ error: 'Failed to fetch geocoding errors' });
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      userId: req.userId
+    });
+    res.status(500).json({ 
+      error: 'Failed to fetch geocoding errors',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
@@ -270,7 +291,17 @@ router.post('/geocode/person/:id', authenticate, async (req, res) => {
 
   } catch (error) {
     console.error('Error geocoding person:', error);
-    res.status(500).json({ error: 'Failed to geocode person' });
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      personId: req.params.id,
+      userId: req.userId
+    });
+    res.status(500).json({ 
+      error: 'Failed to geocode person',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
@@ -310,7 +341,17 @@ router.post('/geocode/asset/:id', authenticate, async (req, res) => {
 
   } catch (error) {
     console.error('Error geocoding asset:', error);
-    res.status(500).json({ error: 'Failed to geocode asset' });
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      assetId: req.params.id,
+      userId: req.userId
+    });
+    res.status(500).json({ 
+      error: 'Failed to geocode asset',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
@@ -343,7 +384,16 @@ router.post('/geocode-all', authenticate, async (req, res) => {
 
   } catch (error) {
     console.error('Error starting batch geocoding:', error);
-    res.status(500).json({ error: 'Failed to start batch geocoding' });
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      userId: req.userId
+    });
+    res.status(500).json({ 
+      error: 'Failed to start batch geocoding',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 

@@ -113,6 +113,8 @@ const FavorForm = () => {
 
       navigate('/favors');
     } catch (err) {
+      console.error('Failed to save favor:', err);
+      console.error('Error response:', err.response?.data);
       setError(err.response?.data?.error || 'Failed to save favor');
       setLoading(false);
     }
@@ -212,7 +214,7 @@ const FavorForm = () => {
               >
                 <option value="pending">Pending</option>
                 <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
+                <option value="declined">Declined</option>
               </select>
             </div>
           </div>

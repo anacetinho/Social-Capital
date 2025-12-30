@@ -29,44 +29,80 @@ class Favor {
 
   /**
    * Find all favors for a user with filters
+   * Returns favors with person names and direction calculated from user perspective
    */
-  static async findAll(userId, { status, person_id, limit = 50, offset = 0 } = {}) {
-    let query = 'SELECT * FROM favors WHERE user_id = $1';
+  static async findAll(userId, { status, person_id, direction, limit = 50, offset = 0 } = {}) {
+    let query = `
+      SELECT 
+        f.*,
+        pg.name as giver_name,
+        pr.name as receiver_name
+      FROM favors f
+      LEFT JOIN people pg ON f.giver_id = pg.id
+      LEFT JOIN people pr ON f.receiver_id = pr.id
+      WHERE f.user_id = $1
+    `;
     const params = [userId];
 
     if (status) {
-      query += ` AND status = $${params.length + 1}`;
+      query += ` AND f.status = $${params.length + 1}`;
       params.push(status);
     }
 
     if (person_id) {
-      query += ` AND (giver_id = $${params.length + 1} OR receiver_id = $${params.length + 1})`;
+      query += ` AND (f.giver_id = $${params.length + 1} OR f.receiver_id = $${params.length + 1})`;
       params.push(person_id);
     }
 
-    query += ` ORDER BY date DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    if (direction) {
+      if (direction === 'given') {
+        query += ` AND f.giver_id = $1`;
+      } else if (direction === 'received') {
+        query += ` AND f.receiver_id = $1`;
+      }
+    }
+
+    query += ` ORDER BY f.date DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
     params.push(limit, offset);
 
     const result = await pool.query(query, params);
 
+    // Calculate direction and person info from user perspective
+    const processedData = result.rows.map(favor => ({
+      ...favor,
+      // Calculate direction based on whether user is giver or receiver
+      direction: favor.giver_id === userId ? 'given' : 'received',
+      // Set person_id and person_name to the OTHER person in the favor
+      person_id: favor.giver_id === userId ? favor.receiver_id : favor.giver_id,
+      person_name: favor.giver_id === userId ? favor.receiver_name : favor.giver_name
+    }));
+
     // Get total count
-    let countQuery = 'SELECT COUNT(*) FROM favors WHERE user_id = $1';
+    let countQuery = 'SELECT COUNT(*) FROM favors f WHERE f.user_id = $1';
     const countParams = [userId];
 
     if (status) {
-      countQuery += ` AND status = $2`;
+      countQuery += ` AND f.status = $2`;
       countParams.push(status);
     }
 
     if (person_id) {
-      countQuery += ` AND (giver_id = $${countParams.length + 1} OR receiver_id = $${countParams.length + 1})`;
+      countQuery += ` AND (f.giver_id = $${countParams.length + 1} OR f.receiver_id = $${countParams.length + 1})`;
       countParams.push(person_id);
+    }
+
+    if (direction) {
+      if (direction === 'given') {
+        countQuery += ` AND f.giver_id = $1`;
+      } else if (direction === 'received') {
+        countQuery += ` AND f.receiver_id = $1`;
+      }
     }
 
     const countResult = await pool.query(countQuery, countParams);
 
     return {
-      data: result.rows,
+      data: processedData,
       total: parseInt(countResult.rows[0].count),
       limit,
       offset

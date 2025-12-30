@@ -160,6 +160,17 @@
   box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
 }
 
+.new-chat-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.new-chat-btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
 .chat-search {
   width: 100%;
   padding: 8px 12px;

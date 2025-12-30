@@ -23,7 +23,8 @@ const Settings = () => {
     ai_provider: 'local',
     ai_api_url: 'http://localhost:1234',
     ai_model: 'llama-2-7b-chat',
-    ai_max_results: 100
+    ai_max_results: 100,
+    ai_timeout: 200
   });
 
   const [uiPreferences, setUiPreferences] = useState({
@@ -355,6 +356,24 @@ const Settings = () => {
               />
               <p className="help-text">
                 Maximum number of items to return in function responses (50-1000)
+              </p>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="ai_timeout">Request Timeout (seconds) *</label>
+              <input
+                type="number"
+                id="ai_timeout"
+                name="ai_timeout"
+                value={settings.ai_timeout}
+                onChange={handleChange}
+                min="10"
+                max="600"
+                required={settings.ai_assistant_enabled}
+                disabled={!settings.ai_assistant_enabled}
+              />
+              <p className="help-text">
+                Maximum time to wait for LLM responses in seconds (10-600). Default: 200 seconds. Increase for slower models or complex queries.
               </p>
             </div>
 

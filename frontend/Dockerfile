@@ -24,9 +24,13 @@ ENV REACT_APP_API_URL=$REACT_APP_API_URL
 RUN npm run build
 
 # Stage 2: Production
-FROM --platform=linux/amd64 nginx:alpine
+# Use nginx 1.25 instead of latest for better WSL2 compatibility
+FROM --platform=linux/amd64 nginx:1.25-alpine
 
-# Copy custom nginx config
+# Copy custom nginx main config with epoll fix for WSL2
+COPY nginx-main.conf /etc/nginx/nginx.conf
+
+# Copy custom nginx server config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy built application from builder stage

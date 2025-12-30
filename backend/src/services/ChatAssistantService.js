@@ -9,8 +9,8 @@ const pool = require('../db/connection');
  */
 
 class ChatAssistantService {
-  constructor(baseURL, model, apiKey = 'dummy-key') {
-    this.llmService = new LLMProviderService(baseURL, model, apiKey);
+  constructor(baseURL, model, apiKey = 'dummy-key', timeoutSeconds = 200) {
+    this.llmService = new LLMProviderService(baseURL, model, apiKey, timeoutSeconds);
   }
 
   /**
@@ -158,7 +158,7 @@ class ChatAssistantService {
       },
       {
         name: 'search_people_by_demographics',
-        description: 'Search for people by demographic criteria (age, gender, location, relationship status). Use for matchmaking, finding professionals in specific age ranges, organizing events, or filtering people by demographic attributes. Returns people with connection paths if from_person_id provided.',
+        description: 'Search for people by demographic criteria (age, gender, location, relationship status, family filter). Use for matchmaking, finding professionals in specific age ranges, organizing events, or filtering people by demographic attributes. FOR ROMANTIC/DATING QUERIES: Always filter by opposite gender of the asking person unless user explicitly specifies otherwise (e.g., "gay", "lesbian", "same-sex", etc.). Default assumption is heterosexual matching. Returns people with connection paths if from_person_id provided.',
         parameters: {
           type: 'object',
           properties: {
@@ -182,9 +182,13 @@ class ChatAssistantService {
               type: 'string',
               description: 'Filter by location/address (optional). Partial match supported (e.g., "Lisbon" matches "Amoreiras, Lisbon"). Example: "Lisbon", "Porto", "Algarve"'
             },
+            family_filter: {
+              type: 'string',
+              description: 'Control family member filtering: "exclude" (remove family members from results - use for dating/matchmaking when user says "no family"), "only" (show only family members - use when user asks about "my family"), or "include" (no family filtering - default). Requires from_person_id to be set.'
+            },
             from_person_id: {
               type: 'string',
-              description: 'Optional: Person name or ID to show connection paths from. Use when in "asking as" mode to find how they connect to matching people.'
+              description: 'Optional: Person name or ID to show connection paths from. Required when using family_filter. Use when in "asking as" mode to find how they connect to matching people.'
             }
           },
           required: []
@@ -219,6 +223,19 @@ When answering "who has X" questions:
 - For tangible resources/property (pool, car, house, boat, etc.), use search_assets
 - For skills/attributes (doctor, speaks spanish, works at X), use search_network
 - Always show connection paths when relevant using the from_person_id parameter
+
+**IMPORTANT - ROMANTIC/DATING QUERIES:**
+When user asks about potential mates, dating, romantic partners, or relationship prospects:
+1. Use search_people_by_demographics tool
+2. Set relationship_status to 'single'
+3. Set family_filter to 'exclude'
+4. **DEFAULT ASSUMPTION: HETEROSEXUAL MATCHING**
+   - If asking person is MALE, set gender='female'
+   - If asking person is FEMALE, set gender='male'
+5. ONLY deviate from heterosexual matching if user explicitly mentions:
+   - "gay", "lesbian", "same-sex", "same gender", or similar LGBTQ+ terms
+   - In these cases, match to same gender as asking person
+6. When user says "I am straight" or similar, reinforce heterosexual matching
 
 When calling tools, prefer using person names (e.g., "Ana Ilharco") rather than IDs unless a specific UUID is provided to you.`;
 
@@ -403,7 +420,8 @@ Remember: You ARE ${talkingToPerson.name}. Everything you say should be from the
               minAge: args.min_age,
               maxAge: args.max_age,
               gender: args.gender || 'any',
-              location: args.location
+              location: args.location,
+              familyFilter: args.family_filter
             },
             demographicsFromPersonId
           );
