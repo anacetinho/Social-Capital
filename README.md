@@ -57,7 +57,6 @@ A comprehensive personal relationship management system for tracking and nurturi
 - **Framer Motion** - Animations
 
 ### AI & Integrations
-- **N8N** - Workflow automation for conversational assistant
 - **LM Studio / Ollama** - Local LLM support
 - **OpenAI API** - Cloud LLM option
 
