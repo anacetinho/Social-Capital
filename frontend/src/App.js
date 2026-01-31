@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Provider as ChakraProvider } from './theme';
 import { AuthProvider } from './context/AuthContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -27,24 +28,25 @@ import ProfessionalHistoryDetail from './pages/ProfessionalHistoryDetail';
 import BiographyForm from './pages/BiographyForm';
 import BiographyDetail from './pages/BiographyDetail';
 import Settings from './pages/Settings';
+import system from './theme';
 import './styles/App.css';
 
 function App() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <Router>
-          <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
+      <ChakraProvider value={system}>
+        <AuthProvider>
+          <Router>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
           />
 
           <Route
@@ -300,9 +302,10 @@ function App() {
           />
 
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </Router>
-    </AuthProvider>
+            </Routes>
+          </Router>
+        </AuthProvider>
+      </ChakraProvider>
     </ErrorBoundary>
   );
 }

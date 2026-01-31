@@ -1,6 +1,83 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Layout from '../components/Layout';
 import api from '../services/api';
+import {
+  Box,
+  Container,
+  Heading,
+  Text,
+  SimpleGrid,
+  Select,
+  VStack,
+  HStack,
+  Avatar,
+  Badge,
+  Flex,
+  Icon,
+  Skeleton,
+} from '@chakra-ui/react';
+import {
+  MdPeople,
+  MdLink,
+  MdEvent,
+  MdStar,
+  MdTrendingUp,
+} from 'react-icons/md';
+import {
+  FadeIn,
+  SlideUp,
+  StaggerContainer,
+  StaggerItem,
+  HoverCard,
+  ScaleIn,
+} from '../components/animations';
+
+const StatCard = ({ icon, label, value, helpText, color, isLoading }) => {
+  return (
+    <HoverCard>
+      <Box
+        bg="white"
+        p={6}
+        borderRadius="2xl"
+        boxShadow="sm"
+        position="relative"
+        overflow="hidden"
+      >
+        {isLoading ? (
+          <>
+            <Skeleton height="60px" mb={2} />
+            <Skeleton height="20px" width="60%" />
+          </>
+        ) : (
+          <>
+            <Box
+              position="absolute"
+              top={-2}
+              right={-2}
+              opacity={0.1}
+              transform="rotate(15deg)"
+            >
+              <Icon as={icon} boxSize={20} color={color} />
+            </Box>
+            <Box position="relative">
+              <Text fontSize="sm" fontWeight="semibold" color="gray.600">
+                {label}
+              </Text>
+              <Text fontSize="4xl" fontWeight="bold" color={color} my={2}>
+                {value}
+              </Text>
+              {helpText && (
+                <Text fontSize="xs" color="gray.500">
+                  {helpText}
+                </Text>
+              )}
+            </Box>
+          </>
+        )}
+      </Box>
+    </HoverCard>
+  );
+};
 
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
@@ -42,280 +119,434 @@ const Dashboard = () => {
     fetchDashboardStats();
   }, [fetchDashboardStats]);
 
-  if (loading) {
-    return (
-      <Layout currentPerson={selectedPerson}>
-        <div>Loading dashboard...</div>
-      </Layout>
-    );
-  }
-
   if (error) {
     return (
       <Layout currentPerson={selectedPerson}>
-        <div className="error-message">{error}</div>
+        <FadeIn>
+          <Box
+            bg="red.50"
+            color="red.800"
+            p={4}
+            borderRadius="xl"
+            borderLeft="4px solid"
+            borderColor="red.500"
+          >
+            {error}
+          </Box>
+        </FadeIn>
       </Layout>
     );
   }
 
   return (
     <Layout currentPerson={selectedPerson}>
-      <div className="page-header">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-          <div>
-            <h1 style={{ margin: 0 }}>Dashboard</h1>
-            <p style={{ margin: '5px 0 0 0' }}>
-              {selectedPersonId && stats?.person
-                ? `Showing statistics for ${stats.person.name}`
-                : 'Overview of your social network'}
-            </p>
-          </div>
-          <div style={{ minWidth: '300px' }}>
-            <label style={{ display: 'block', fontSize: '12px', color: '#7f8c8d', marginBottom: '5px', fontWeight: '600' }}>
-              Key Person:
-            </label>
-            <select
-              value={selectedPersonId}
-              onChange={(e) => setSelectedPersonId(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                border: '2px solid #3498db',
-                borderRadius: '6px',
-                fontSize: '14px',
-                background: 'white',
-                cursor: 'pointer'
-              }}
-            >
-              <option value="">All People (Network Overview)</option>
-              {people.map((person) => (
-                <option key={person.id} value={person.id}>
-                  {person.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
+      <Box>
+        {/* Header Section */}
+        <FadeIn>
+          <Flex justify="space-between" align="flex-start" mb={8}>
+            <Box>
+              <Heading
+                size="2xl"
+                mb={2}
+                bgGradient="linear(to-r, brand.600, brand.400)"
+                bgClip="text"
+                letterSpacing="tight"
+              >
+                Dashboard
+              </Heading>
+              <Text color="neutral.600" fontSize="lg">
+                {selectedPersonId && stats?.person
+                  ? `Showing statistics for ${stats.person.name}`
+                  : 'Overview of your social network'}
+              </Text>
+            </Box>
 
-      <div className="stats-grid">
-        {selectedPersonId && stats?.degree_connections ? (
-          // Show degree connections when a person is selected
-          <>
-            <div className="stat-card">
-              <div className="stat-value">{stats.degree_connections.n1}</div>
-              <div className="stat-label">N1 (1st Degree)</div>
-            </div>
+            <Box maxW="320px">
+              <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>
+                Key Person
+              </Text>
+              <Select
+                value={selectedPersonId}
+                onChange={(e) => setSelectedPersonId(e.target.value)}
+                size="md"
+              >
+                <option value="">All People (Network Overview)</option>
+                {people.map((person) => (
+                  <option key={person.id} value={person.id}>
+                    {person.name}
+                  </option>
+                ))}
+              </Select>
+            </Box>
+          </Flex>
+        </FadeIn>
 
-            <div className="stat-card">
-              <div className="stat-value">{stats.degree_connections.n2}</div>
-              <div className="stat-label">N2 (N1 + 2nd Degree)</div>
-            </div>
+        {/* Stats Grid */}
+        <StaggerContainer>
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6} mb={8}>
+            {selectedPersonId && stats?.degree_connections ? (
+              <>
+                <StaggerItem>
+                  <StatCard
+                    icon={MdPeople}
+                    label="N1 (1st Degree)"
+                    value={stats.degree_connections.n1}
+                    color="brand.500"
+                    isLoading={loading}
+                  />
+                </StaggerItem>
+                <StaggerItem>
+                  <StatCard
+                    icon={MdLink}
+                    label="N2 (N1 + 2nd Degree)"
+                    value={stats.degree_connections.n2}
+                    color="blue.500"
+                    isLoading={loading}
+                  />
+                </StaggerItem>
+                <StaggerItem>
+                  <StatCard
+                    icon={MdTrendingUp}
+                    label="N3 (N1 + N2 + 3rd Degree)"
+                    value={stats.degree_connections.n3}
+                    color="purple.500"
+                    isLoading={loading}
+                  />
+                </StaggerItem>
+                <StaggerItem>
+                  <StatCard
+                    icon={MdStar}
+                    label="Favors"
+                    value={stats.total_favors || 0}
+                    color="orange.500"
+                    isLoading={loading}
+                  />
+                </StaggerItem>
+              </>
+            ) : (
+              <>
+                <StaggerItem>
+                  <StatCard
+                    icon={MdPeople}
+                    label="People"
+                    value={stats?.total_people || 0}
+                    color="brand.500"
+                    isLoading={loading}
+                  />
+                </StaggerItem>
+                <StaggerItem>
+                  <StatCard
+                    icon={MdLink}
+                    label="Relationships"
+                    value={stats?.total_relationships || 0}
+                    color="blue.500"
+                    isLoading={loading}
+                  />
+                </StaggerItem>
+                <StaggerItem>
+                  <StatCard
+                    icon={MdEvent}
+                    label="Events"
+                    value={stats?.total_events || 0}
+                    color="purple.500"
+                    isLoading={loading}
+                  />
+                </StaggerItem>
+                <StaggerItem>
+                  <StatCard
+                    icon={MdStar}
+                    label="Favors"
+                    value={stats?.total_favors || 0}
+                    color="orange.500"
+                    isLoading={loading}
+                  />
+                </StaggerItem>
+              </>
+            )}
+          </SimpleGrid>
+        </StaggerContainer>
 
-            <div className="stat-card">
-              <div className="stat-value">{stats.degree_connections.n3}</div>
-              <div className="stat-label">N3 (N1 + N2 + 3rd Degree)</div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-value">{stats.total_favors || 0}</div>
-              <div className="stat-label">Favors</div>
-            </div>
-          </>
-        ) : (
-          // Show standard metrics when viewing all people
-          <>
-            <div className="stat-card">
-              <div className="stat-value">{stats?.total_people || 0}</div>
-              <div className="stat-label">People</div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-value">{stats?.total_relationships || 0}</div>
-              <div className="stat-label">Relationships</div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-value">{stats?.total_events || 0}</div>
-              <div className="stat-label">Events</div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-value">{stats?.total_favors || 0}</div>
-              <div className="stat-label">Favors</div>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Network Health Score */}
-      <div className="card" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h3 style={{ margin: '0 0 8px 0', color: 'white' }}>Network Health Score</h3>
-            <p style={{ margin: 0, fontSize: '13px', opacity: 0.9 }}>
-              Based on activity, diversity, and engagement
-            </p>
-          </div>
-          <div style={{ fontSize: '48px', fontWeight: 'bold' }}>
-            {stats?.network_health_score || 0}
-            <span style={{ fontSize: '24px', opacity: 0.8 }}>/100</span>
-          </div>
-        </div>
-        <div style={{ marginTop: '15px', background: 'rgba(255,255,255,0.2)', borderRadius: '10px', height: '8px', overflow: 'hidden' }}>
-          <div style={{
-            width: `${stats?.network_health_score || 0}%`,
-            height: '100%',
-            background: 'white',
-            borderRadius: '10px',
-            transition: 'width 0.5s ease'
-          }} />
-        </div>
-      </div>
-
-      <div className="card">
-        <h3>Relationship Strength Distribution</h3>
-        {stats?.relationship_strength_distribution && (
-          <div style={{ display: 'flex', gap: '15px', marginTop: '20px', alignItems: 'flex-end', height: '200px' }}>
-            {[1, 2, 3, 4, 5].map((strength) => {
-              const count = stats.relationship_strength_distribution[strength] || 0;
-              const maxCount = Math.max(...Object.values(stats.relationship_strength_distribution || {}), 1);
-              const heightPercent = (count / maxCount) * 100;
-              const colors = {
-                1: '#95a5a6',
-                2: '#3498db',
-                3: '#f39c12',
-                4: '#e67e22',
-                5: '#e74c3c'
-              };
-
-              return (
-                <div key={strength} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
-                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: colors[strength], marginBottom: '8px' }}>
-                    {count}
-                  </div>
-                  <div style={{
-                    width: '100%',
-                    height: `${heightPercent}%`,
-                    background: colors[strength],
-                    borderRadius: '6px 6px 0 0',
-                    transition: 'height 0.3s ease',
-                    minHeight: count > 0 ? '20px' : '0'
-                  }} />
-                  <div style={{ fontSize: '12px', color: '#7f8c8d', marginTop: '8px', fontWeight: '500' }}>
-                    {strength === 1 ? 'Weak' : strength === 2 ? 'Basic' : strength === 3 ? 'Good' : strength === 4 ? 'Strong' : 'Very Strong'}
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#95a5a6' }}>
-                    {strength}★
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Top Connections */}
-      <div className="card">
-        <h3>Most Connected People</h3>
-        {stats?.top_connections && stats.top_connections.length > 0 ? (
-          <div style={{ marginTop: '15px' }}>
-            {stats.top_connections.slice(0, 5).map((person, index) => (
-              <div key={person.id} style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '12px',
-                marginBottom: '10px',
-                background: index === 0 ? '#fff9e6' : '#f8f9fa',
-                borderRadius: '8px',
-                border: index === 0 ? '2px solid #f39c12' : '1px solid #ecf0f1'
-              }}>
-                <div style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  background: index === 0 ? '#f39c12' : '#3498db',
-                  color: 'white',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 'bold',
-                  fontSize: '14px',
-                  marginRight: '12px'
-                }}>
-                  {index + 1}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: '500', fontSize: '14px' }}>{person.name}</div>
-                  <div style={{ fontSize: '12px', color: '#7f8c8d' }}>
-                    {person.connection_count} {person.connection_count === 1 ? 'connection' : 'connections'}
-                  </div>
-                </div>
-                {index === 0 && (
-                  <div style={{ fontSize: '20px' }}>👑</div>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p style={{ color: '#7f8c8d' }}>No connection data available</p>
-        )}
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-        <div className="card">
-          <h3>Recent Events</h3>
-          {stats?.recent_events && stats.recent_events.length > 0 ? (
-            <ul style={{ listStyle: 'none', padding: 0 }}>
-              {stats.recent_events.slice(0, 5).map((event) => (
-                <li
-                  key={event.id}
-                  style={{
-                    padding: '10px 0',
-                    borderBottom: '1px solid #ecf0f1',
-                  }}
+        {/* Network Health Score */}
+        <SlideUp mb={8}>
+          <Box
+            bgGradient="linear(135deg, brand.500, brand.700)"
+            p={8}
+            borderRadius="2xl"
+            color="white"
+            boxShadow="elevated"
+            position="relative"
+            overflow="hidden"
+          >
+            {loading ? (
+              <Skeleton height="120px" />
+            ) : (
+              <>
+                <Box
+                  position="absolute"
+                  top={-10}
+                  right={-10}
+                  opacity={0.1}
+                  transform="rotate(15deg)"
                 >
-                  <div style={{ fontWeight: '500' }}>{event.title}</div>
-                  <div style={{ fontSize: '12px', color: '#7f8c8d' }}>
-                    {new Date(event.date).toLocaleDateString()}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p style={{ color: '#7f8c8d' }}>No recent events</p>
-          )}
-        </div>
+                  <Icon as={MdTrendingUp} boxSize={40} />
+                </Box>
+                <Flex justify="space-between" align="center" position="relative">
+                  <Box>
+                    <Heading size="lg" mb={2}>
+                      Network Health Score
+                    </Heading>
+                    <Text fontSize="sm" opacity={0.9}>
+                      Based on activity, diversity, and engagement
+                    </Text>
+                  </Box>
+                  <Box textAlign="right">
+                    <Text fontSize="6xl" fontWeight="black" lineHeight="1">
+                      {stats?.network_health_score || 0}
+                    </Text>
+                    <Text fontSize="2xl" opacity={0.8}>
+                      / 100
+                    </Text>
+                  </Box>
+                </Flex>
+                <Box mt={6}>
+                  <Box
+                    position="relative"
+                    height="8px"
+                    borderRadius="full"
+                    bg="whiteAlpha.300"
+                    overflow="hidden"
+                  >
+                    <Box
+                      position="absolute"
+                      left={0}
+                      top={0}
+                      height="100%"
+                      width={`${stats?.network_health_score || 0}%`}
+                      bg="white"
+                      borderRadius="full"
+                      transition="all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)"
+                    />
+                  </Box>
+                </Box>
+              </>
+            )}
+          </Box>
+        </SlideUp>
 
-        <div className="card">
-          <h3>Upcoming Birthdays</h3>
-          {stats?.upcoming_birthdays && stats.upcoming_birthdays.length > 0 ? (
-            <ul style={{ listStyle: 'none', padding: 0 }}>
-              {stats.upcoming_birthdays.map((person) => (
-                <li
-                  key={person.id}
-                  style={{
-                    padding: '10px 0',
-                    borderBottom: '1px solid #ecf0f1',
-                  }}
-                >
-                  <div style={{ fontWeight: '500' }}>{person.name}</div>
-                  <div style={{ fontSize: '12px', color: '#7f8c8d' }}>
-                    {person.birthday
-                      ? new Date(person.birthday).toLocaleDateString(undefined, {
-                          month: 'long',
-                          day: 'numeric',
-                        })
-                      : 'Date unknown'}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p style={{ color: '#7f8c8d' }}>No upcoming birthdays</p>
-          )}
-        </div>
-      </div>
+        {/* Relationship Strength Distribution */}
+        <ScaleIn mb={8}>
+          <Box bg="white" p={8} borderRadius="2xl" boxShadow="sm">
+            <Heading size="md" mb={6}>
+              Relationship Strength Distribution
+            </Heading>
+            {stats?.relationship_strength_distribution && !loading ? (
+              <Flex gap={4} align="flex-end" h="250px">
+                {[1, 2, 3, 4, 5].map((strength) => {
+                  const count = stats.relationship_strength_distribution[strength] || 0;
+                  const maxCount = Math.max(
+                    ...Object.values(stats.relationship_strength_distribution || {}),
+                    1
+                  );
+                  const heightPercent = (count / maxCount) * 100;
+                  const colors = {
+                    1: 'neutral.400',
+                    2: 'blue.400',
+                    3: 'orange.400',
+                    4: 'orange.500',
+                    5: 'red.500',
+                  };
+                  const labels = {
+                    1: 'Weak',
+                    2: 'Basic',
+                    3: 'Good',
+                    4: 'Strong',
+                    5: 'Very Strong',
+                  };
+
+                  return (
+                    <VStack key={strength} flex={1} h="full" justify="flex-end" spacing={2}>
+                      <Text fontWeight="bold" fontSize="xl" color={colors[strength]}>
+                        {count}
+                      </Text>
+                      <Box
+                        w="full"
+                        h={`${heightPercent}%`}
+                        minH={count > 0 ? '20px' : 0}
+                        bg={colors[strength]}
+                        borderRadius="lg"
+                        transition="all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)"
+                        boxShadow="sm"
+                      />
+                      <VStack spacing={0}>
+                        <Text fontSize="xs" fontWeight="semibold" color="neutral.600">
+                          {labels[strength]}
+                        </Text>
+                        <Text fontSize="xs" color="neutral.400">
+                          {strength}★
+                        </Text>
+                      </VStack>
+                    </VStack>
+                  );
+                })}
+              </Flex>
+            ) : (
+              <Skeleton height="250px" />
+            )}
+          </Box>
+        </ScaleIn>
+
+        {/* Most Connected People */}
+        <FadeIn mb={8}>
+          <Box bg="white" p={8} borderRadius="2xl" boxShadow="sm">
+            <Heading size="md" mb={6}>
+              Most Connected People
+            </Heading>
+            {stats?.top_connections && stats.top_connections.length > 0 && !loading ? (
+              <VStack spacing={3} align="stretch">
+                {stats.top_connections.slice(0, 5).map((person, index) => (
+                  <HoverCard key={person.id}>
+                    <Flex
+                      align="center"
+                      p={4}
+                      borderRadius="xl"
+                      bg={index === 0 ? 'orange.50' : 'neutral.50'}
+                      border="2px solid"
+                      borderColor={index === 0 ? 'orange.200' : 'neutral.100'}
+                      transition="all 0.3s"
+                    >
+                      <Avatar
+                        name={person.name}
+                        bg={index === 0 ? 'orange.500' : 'brand.500'}
+                        color="white"
+                        size="md"
+                        mr={4}
+                      />
+                      <Box flex={1}>
+                        <Text fontWeight="semibold" fontSize="md">
+                          {person.name}
+                        </Text>
+                        <Text fontSize="sm" color="neutral.600">
+                          {person.connection_count}{' '}
+                          {person.connection_count === 1 ? 'connection' : 'connections'}
+                        </Text>
+                      </Box>
+                      {index === 0 && (
+                        <Badge colorScheme="orange" fontSize="lg" px={3} py={1}>
+                          👑 Top
+                        </Badge>
+                      )}
+                      <Badge colorScheme="brand" ml={2}>
+                        #{index + 1}
+                      </Badge>
+                    </Flex>
+                  </HoverCard>
+                ))}
+              </VStack>
+            ) : loading ? (
+              <VStack spacing={3}>
+                <Skeleton height="60px" />
+                <Skeleton height="60px" />
+                <Skeleton height="60px" />
+              </VStack>
+            ) : (
+              <Text color="neutral.500">No connection data available</Text>
+            )}
+          </Box>
+        </FadeIn>
+
+        {/* Recent Events & Upcoming Birthdays */}
+        <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={6}>
+          <FadeIn>
+            <Box bg="white" p={8} borderRadius="2xl" boxShadow="sm" h="full">
+              <Heading size="md" mb={6}>
+                Recent Events
+              </Heading>
+              {stats?.recent_events && stats.recent_events.length > 0 && !loading ? (
+                <VStack spacing={3} align="stretch">
+                  {stats.recent_events.slice(0, 5).map((event) => (
+                    <Box
+                      key={event.id}
+                      p={3}
+                      borderBottom="1px solid"
+                      borderColor="neutral.100"
+                      _last={{ borderBottom: 'none' }}
+                      transition="all 0.2s"
+                      _hover={{ bg: 'neutral.50', borderRadius: 'md' }}
+                    >
+                      <Text fontWeight="medium" mb={1}>
+                        {event.title}
+                      </Text>
+                      <Text fontSize="sm" color="neutral.500">
+                        {new Date(event.date).toLocaleDateString()}
+                      </Text>
+                    </Box>
+                  ))}
+                </VStack>
+              ) : loading ? (
+                <VStack spacing={3} align="stretch">
+                  <Skeleton height="20px" />
+                  <Skeleton height="20px" />
+                  <Skeleton height="20px" />
+                  <Skeleton height="20px" />
+                  <Skeleton height="20px" />
+                </VStack>
+              ) : (
+                <Text color="neutral.500">No recent events</Text>
+              )}
+            </Box>
+          </FadeIn>
+
+          <FadeIn delay={0.1}>
+            <Box bg="white" p={8} borderRadius="2xl" boxShadow="sm" h="full">
+              <Heading size="md" mb={6}>
+                Upcoming Birthdays
+              </Heading>
+              {stats?.upcoming_birthdays && stats.upcoming_birthdays.length > 0 && !loading ? (
+                <VStack spacing={3} align="stretch">
+                  {stats.upcoming_birthdays.map((person) => (
+                    <Box
+                      key={person.id}
+                      p={3}
+                      borderBottom="1px solid"
+                      borderColor="neutral.100"
+                      _last={{ borderBottom: 'none' }}
+                      transition="all 0.2s"
+                      _hover={{ bg: 'neutral.50', borderRadius: 'md' }}
+                    >
+                      <HStack spacing={3}>
+                        <Text fontSize="2xl">🎂</Text>
+                        <Box>
+                          <Text fontWeight="medium" mb={1}>
+                            {person.name}
+                          </Text>
+                          <Text fontSize="sm" color="neutral.500">
+                            {person.birthday
+                              ? new Date(person.birthday).toLocaleDateString(undefined, {
+                                  month: 'long',
+                                  day: 'numeric',
+                                })
+                              : 'Date unknown'}
+                          </Text>
+                        </Box>
+                      </HStack>
+                    </Box>
+                  ))}
+                </VStack>
+              ) : loading ? (
+                <VStack spacing={3} align="stretch">
+                  <Skeleton height="20px" />
+                  <Skeleton height="20px" />
+                  <Skeleton height="20px" />
+                  <Skeleton height="20px" />
+                  <Skeleton height="20px" />
+                </VStack>
+              ) : (
+                <Text color="neutral.500">No upcoming birthdays</Text>
+              )}
+            </Box>
+          </FadeIn>
+        </SimpleGrid>
+      </Box>
     </Layout>
   );
 };

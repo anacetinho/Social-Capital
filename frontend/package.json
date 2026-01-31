@@ -4,12 +4,17 @@
   "description": "Frontend for Social Capital CRM",
   "private": true,
   "dependencies": {
+    "@chakra-ui/icons": "^2.2.4",
+    "@chakra-ui/react": "^3.31.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "axios": "^1.6.2",
     "d3": "^7.9.0",
     "framer-motion": "^10.16.5",
     "leaflet": "^1.9.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-icons": "^5.5.0",
     "react-leaflet": "^4.2.1",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^6.20.0",
@@ -21,7 +26,11 @@
   "devDependencies": {
     "@testing-library/jest-dom": "^6.1.5",
     "@testing-library/react": "^14.1.2",
-    "@testing-library/user-event": "^14.5.1"
+    "@testing-library/user-event": "^14.5.1",
+    "typescript": "^4.9.5"
+  },
+  "overrides": {
+    "typescript": "^4.9.5"
   },
   "scripts": {
     "start": "react-scripts start",
